@@ -1,0 +1,13 @@
+Flask
+Flask-Cors
+Flask-SQLAlchemy
+pytesseract
+pillow
+pandas
+scikit-learn
+joblib
+Werkzeug
+PyJWT
+easyocr
+torch
+torchvision
