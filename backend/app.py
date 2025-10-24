@@ -3,7 +3,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 import joblib
-from ocr import extract_text_from_image
+from ocr import extract_text_from_image, extract_text_and_fields
 from models import db, User, Expense
 import jwt
 from datetime import datetime, timedelta
@@ -117,9 +117,19 @@ def upload_receipt():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    # Extract text using OCR
-    extracted_text = extract_text_from_image(filepath)
-    return jsonify({"extracted_text": extracted_text})
+    # Extract text + parsed fields using OCR
+    try:
+        ocr_data = extract_text_and_fields(filepath)
+    except Exception:
+        # fallback to plain text in case of any unexpected error
+        extracted_text = extract_text_from_image(filepath)
+        ocr_data = {"text": extracted_text, "fields": {}}
+    return jsonify({
+        "extracted_text": ocr_data.get("text"),
+        "text": ocr_data.get("text"),
+        "fields": ocr_data.get("fields", {}),
+        "lines": ocr_data.get("lines", []),
+    })
 
 @app.route('/categorize', methods=['POST'])
 def categorize_expense():
