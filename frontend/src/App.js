@@ -35,6 +35,7 @@ const App = () => {
             <Route path="/upload" element={<ProtectedRoute><UploadReceipt /></ProtectedRoute>} />
             <Route path="/expenses" element={<ProtectedRoute><ExpenseList /></ProtectedRoute>} />
             <Route path="/insights" element={<ProtectedRoute><Insights data={dummyData} /></ProtectedRoute>} />
+            <Route path="/insights" element={<ProtectedRoute><Insights data={dummyData} /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/budget" element={<ProtectedRoute><BudgetSettings /></ProtectedRoute>} />
           </Routes>
