@@ -170,6 +170,113 @@ def _extract_total_from_lines(lines: List[Dict[str, Any]]) -> Dict[str, Any]:
     return max_info or {}
 
 
+def _detect_receipt_type(text: str, lines: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Detect the type of receipt/bill based on keywords."""
+    text_lower = text.lower()
+    
+    # Define keywords for different bill types
+    receipt_patterns = {
+        "grocery": ["supermarket", "grocery", "mart", "fresh", "organic", "vegetables", "fruits"],
+        "restaurant": ["restaurant", "cafe", "coffee", "dining", "food", "bistro", "diner", "pizza", "burger"],
+        "fuel": ["gas", "petrol", "fuel", "diesel", "oil", "gallons", "liters", "pump"],
+        "utilities": ["electricity", "water", "gas bill", "utility", "kwh", "consumption"],
+        "pharmacy": ["pharmacy", "medical", "rx", "prescription", "medicine", "health"],
+        "transportation": ["taxi", "uber", "lyft", "transport", "ride", "fare", "metro", "bus"],
+        "shopping": ["store", "shop", "retail", "mall", "purchase", "sale"],
+        "online": ["amazon", "ebay", "online", "order", "delivery", "shipping"],
+    }
+    
+    detected = []
+    for bill_type, keywords in receipt_patterns.items():
+        if any(kw in text_lower for kw in keywords):
+            detected.append(bill_type)
+    
+    if not detected:
+        detected.append("general")
+    
+    return {
+        "type": detected[0] if len(detected) == 1 else "mixed",
+        "all_types": detected,
+        "confidence": "high" if len(detected) == 1 else "medium" if detected else "low"
+    }
+
+
+def _extract_vendor(text: str, lines: List[Dict[str, Any]]) -> str:
+    """Extract vendor/merchant name (typically first few lines, all caps)."""
+    if not lines:
+        return ""
+    
+    # Look at first 3 lines for all-caps vendor names
+    for i in range(min(3, len(lines))):
+        line_text = lines[i]["text"].strip()
+        # Vendor names often ALL CAPS and longer than 3 chars
+        if line_text.isupper() and len(line_text) > 3:
+            # Remove common noise
+            clean = re.sub(r'[^A-Z\s]', '', line_text).strip()
+            if len(clean) >= 3:
+                return clean
+    
+    # Fallback: take first non-empty line
+    for line in lines[:3]:
+        text = line["text"].strip()
+        if len(text) > 2:
+            return text.split()[0]  # First word
+    
+    return ""
+
+
+def _extract_date(text: str) -> str:
+    """Extract date from receipt."""
+    # Common date patterns
+    patterns = [
+        r'\b(\d{4}[-/]\d{2}[-/]\d{2})\b',  # YYYY-MM-DD
+        r'\b(\d{2}[-/]\d{2}[-/]\d{4})\b',  # DD-MM-YYYY or MM-DD-YYYY
+        r'\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})\b',  # 15 Jan 2025
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+    
+    return ""
+
+
+def extract_text_and_fields(image_path: str) -> Dict[str, Any]:
+    """Run EasyOCR and return both raw text and parsed fields (like total, vendor, type)."""
+    reader = easyocr.Reader(['en'])
+    detailed = reader.readtext(image_path, detail=1)  # [(bbox, text, conf), ...]
+    # Build plain text (joined by newlines to preserve some structure)
+    plain_text = "\n".join([t for (_, t, _) in detailed])
+    lines = _group_into_lines(detailed)
+    total = _extract_total_from_lines(lines)
+    receipt_type = _detect_receipt_type(plain_text, lines)
+    vendor = _extract_vendor(plain_text, lines)
+    date = _extract_date(plain_text)
+    
+    return {
+        "text": plain_text,
+        "lines": lines,
+        "fields": {
+            "total": total,
+            "receipt_type": receipt_type,
+            "vendor": vendor,
+            "date": date,
+        },
+    }
+
+
+def extract_text_from_image(image_path):
+    """
+    Backward-compatible helper that returns only the flattened text.
+    """
+    try:
+        data = extract_text_and_fields(image_path)
+        return data.get("text", "")
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
 def extract_text_and_fields(image_path: str) -> Dict[str, Any]:
     """Run EasyOCR and return both raw text and parsed fields (like total)."""
     reader = easyocr.Reader(['en'])

@@ -36,4 +36,11 @@ export const ExpenseAPI = {
   categorize: (text) => api.post('/categorize', { text }),
 };
 
+export const BudgetAPI = {
+  getBudgets: (month) => api.get('/budgets', { params: month ? { month } : {} }),
+  setBudget: (category, monthly_limit, month) => api.post('/budgets', { category, monthly_limit, month }),
+  deleteBudget: (id) => api.delete(`/budgets/${id}`),
+  getAlerts: (month) => api.get('/budget-alerts', { params: month ? { month } : {} }),
+};
+
 export default api;

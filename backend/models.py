@@ -17,8 +17,9 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationship: one user has many expenses
+    # Relationships
     expenses = db.relationship('Expense', backref='user', lazy=True, cascade='all, delete-orphan')
+    budgets = db.relationship('Budget', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
         """Hash and set the user's password."""
@@ -57,5 +58,28 @@ class Expense(db.Model):
             'description': self.description,
             'amount': self.amount,
             'category': self.category,
+            'created_at': self.created_at.isoformat()
+        }
+
+class Budget(db.Model):
+    __tablename__ = 'budgets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    category = db.Column(db.String(50), nullable=False)
+    monthly_limit = db.Column(db.Float, nullable=False)
+    month = db.Column(db.String(7), nullable=False)  # Format: YYYY-MM
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Unique constraint: one budget per user per category per month
+    __table_args__ = (db.UniqueConstraint('user_id', 'category', 'month', name='_user_category_month_uc'),)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'category': self.category,
+            'monthly_limit': self.monthly_limit,
+            'month': self.month,
             'created_at': self.created_at.isoformat()
         }

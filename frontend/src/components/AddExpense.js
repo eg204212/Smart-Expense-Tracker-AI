@@ -11,6 +11,7 @@ const AddExpense = () => {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [confidence, setConfidence] = useState(null);
+  const [receiptType, setReceiptType] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,8 +24,15 @@ const AddExpense = () => {
   const extractFromText = async (text, fields) => {
     // naive extraction helpers
     const lines = text.split(/\n|\r/).map((l) => l.trim()).filter(Boolean);
+    
+    // Use backend-extracted fields first
+    if (!vendor && fields?.vendor) setVendor(fields.vendor);
+    if (!date && fields?.date) setDate(fields.date);
+    
+    // Fallback extraction
     if (!description && lines[0]) setDescription(lines[0]);
     if (!vendor && lines[0]) setVendor(lines[0].split(/\s{2,}|-/)[0]);
+    
     // Prefer backend-parsed total if available
     const totalField = fields?.total;
     if (!amount && totalField?.amount) {
@@ -68,10 +76,16 @@ const AddExpense = () => {
     setLoading(true);
     setMessage('Extracting details...');
     try {
-  const { data } = await ExpenseAPI.uploadReceipt(file);
-  const text = data?.text || data?.extracted_text || '';
-  const fields = data?.fields || {};
-  if (text) await extractFromText(text, fields);
+      const { data } = await ExpenseAPI.uploadReceipt(file);
+      const text = data?.text || data?.extracted_text || '';
+      const fields = data?.fields || {};
+      
+      // Set receipt type if detected
+      if (fields?.receipt_type) {
+        setReceiptType(fields.receipt_type.type || '');
+      }
+      
+      if (text) await extractFromText(text, fields);
       setMessage('Details extracted. Review and save.');
     } catch (e) {
       setMessage('Failed to extract details. You can enter them manually.');
@@ -99,6 +113,11 @@ const AddExpense = () => {
         </div>
       )}
       <button onClick={handleExtract} disabled={loading}>{loading ? 'Extracting...' : 'Extract Details'}</button>
+      {receiptType && (
+        <p style={{ color: '#00897B', fontWeight: 'bold' }}>
+          Receipt Type: {receiptType.charAt(0).toUpperCase() + receiptType.slice(1)} 📄
+        </p>
+      )}
       {confidence != null && (
         <p>AI suggested category: <strong>{category || '—'}</strong> {confidence != null && `(confidence: ${confidence}%)`}</p>
       )}

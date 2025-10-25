@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard';
 import AddExpense from './components/AddExpense';
 import ExpenseHistory from './components/ExpenseHistory';
 import Profile from './components/Profile';
+import BudgetSettings from './components/BudgetSettings';
 import Layout from './components/Layout';
 import { AuthProvider, ProtectedRoute } from './context/AuthContext';
 
@@ -35,6 +36,7 @@ const App = () => {
             <Route path="/expenses" element={<ProtectedRoute><ExpenseList /></ProtectedRoute>} />
             <Route path="/insights" element={<ProtectedRoute><Insights data={dummyData} /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/budget" element={<ProtectedRoute><BudgetSettings /></ProtectedRoute>} />
           </Routes>
         </Layout>
       </AuthProvider>

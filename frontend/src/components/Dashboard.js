@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './Dashboard.css';
 import { ExpenseAPI } from '../services/api';
+import BudgetAlerts from './BudgetAlerts';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +14,10 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Container, Grid, Paper, Typography, Box, Card, CardContent } from '@mui/material';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import CategoryIcon from '@mui/icons-material/Category';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 
 ChartJS.register(CategoryScale, LinearScale, ArcElement, BarElement, PointElement, LineElement, Tooltip, Legend);
 
@@ -70,39 +75,124 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <h2>Dashboard</h2>
-      <div className="summary-cards">
-        <div className="card">Total Spent: {totals.sum}</div>
-        <div className="card">Top Category: {totals.topCat}</div>
-        <div className="card">Avg Expense: {totals.avgExpense}</div>
-      </div>
-      
-      {/* AI Insights Panel */}
-      <div style={{ marginTop: 24, padding: 16, backgroundColor: '#E8F5F5', borderRadius: 8 }}>
-        <h3>💡 AI Insights</h3>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Dashboard
+      </Typography>
+
+      {/* Budget Alerts */}
+      <BudgetAlerts />
+
+      {/* Summary Cards */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    Total Spent
+                  </Typography>
+                  <Typography variant="h4">${totals.sum.toFixed(2)}</Typography>
+                </Box>
+                <AttachMoneyIcon color="primary" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    Top Category
+                  </Typography>
+                  <Typography variant="h5">{totals.topCat}</Typography>
+                </Box>
+                <CategoryIcon color="secondary" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Typography color="textSecondary" gutterBottom>
+                    Avg Expense
+                  </Typography>
+                  <Typography variant="h5">${totals.avgExpense}</Typography>
+                </Box>
+                <TrendingUpIcon color="success" sx={{ fontSize: 40 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* AI Insights */}
+      <Paper sx={{ p: 2, mb: 3, backgroundColor: '#E8F5F5' }}>
+        <Typography variant="h6" gutterBottom>
+          💡 AI Insights
+        </Typography>
         {totals.foodSpend > 0 && (
-          <p>🍔 Food spending: ${totals.foodSpend}. Consider meal planning to save more!</p>
+          <Typography variant="body2" paragraph>
+            🍔 Food spending: ${totals.foodSpend.toFixed(2)}. Consider meal planning to save more!
+          </Typography>
         )}
         {totals.transportSpend > 0 && (
-          <p>🚗 Transport costs: ${totals.transportSpend}. Explore carpooling options.</p>
+          <Typography variant="body2" paragraph>
+            🚗 Transport costs: ${totals.transportSpend.toFixed(2)}. Explore carpooling options.
+          </Typography>
         )}
         {expenses.length > 5 && (
-          <p>📊 You've logged {expenses.length} expenses. Great job tracking!</p>
+          <Typography variant="body2" paragraph>
+            📊 You've logged {expenses.length} expenses. Great job tracking!
+          </Typography>
         )}
         {expenses.length === 0 && (
-          <p>📝 No expenses yet. Start by adding your first expense!</p>
+          <Typography variant="body2">
+            📝 No expenses yet. Start by adding your first expense!
+          </Typography>
         )}
-      </div>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 24 }}>
-        <Bar data={barData} />
-        <Pie data={pieData} />
-      </div>
-      <div style={{ marginTop: 24 }}>
-        <Line data={lineData} />
-      </div>
-    </div>
+      </Paper>
+
+      {/* Charts */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Spending by Category
+            </Typography>
+            <Box sx={{ height: 300 }}>
+              <Pie data={pieData} options={{ maintainAspectRatio: false }} />
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Category Breakdown
+            </Typography>
+            <Box sx={{ height: 300 }}>
+              <Bar data={barData} options={{ maintainAspectRatio: false }} />
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Spending Trend
+            </Typography>
+            <Box sx={{ height: 250 }}>
+              <Line data={lineData} options={{ maintainAspectRatio: false }} />
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
   );
 };
 

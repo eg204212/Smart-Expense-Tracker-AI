@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 import joblib
 from ocr import extract_text_from_image, extract_text_and_fields
-from models import db, User, Expense
+from models import db, User, Expense, Budget
 import jwt
 from datetime import datetime, timedelta
 from functools import wraps
