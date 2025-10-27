@@ -2,6 +2,7 @@
 from flask import jsonify, request
 from models import db, Budget, Expense
 from datetime import datetime
+from sqlalchemy import or_, func
 
 def register_budget_routes(app, token_required):
     """Register budget-related routes"""
@@ -77,21 +78,24 @@ def register_budget_routes(app, token_required):
         
         alerts = []
         for budget in budgets:
-            # Calculate total spending in this category for this month
-            # Parse month to get start and end dates
-            year, mon = map(int, month.split('-'))
-            start_date = f"{year}-{mon:02d}-01"
-            if mon == 12:
-                end_date = f"{year+1}-01-01"
-            else:
-                end_date = f"{year}-{mon+1:02d}-01"
-            
-            total_spent = db.session.query(db.func.sum(Expense.amount)).filter(
+            # Calculate total spending for this month, support 'All' category and robust month detection
+            # Prefer matching YYYY-MM prefix on Expense.date, fallback to created_at month
+            month_prefix = f"{month}"
+
+            base_filters = [
                 Expense.user_id == current_user.id,
-                Expense.category == budget.category,
-                Expense.date >= start_date,
-                Expense.date < end_date
-            ).scalar() or 0.0
+                # Month filter: either the string date starts with YYYY-MM or created_at matches month
+                or_(
+                    Expense.date.like(f"{month_prefix}%"),
+                    func.strftime('%Y-%m', Expense.created_at) == month
+                )
+            ]
+
+            # Category filter: 'All' means no category filter
+            if budget.category.lower() != 'all':
+                base_filters.append(func.lower(Expense.category) == budget.category.lower())
+
+            total_spent = db.session.query(func.coalesce(func.sum(Expense.amount), 0.0)).filter(*base_filters).scalar() or 0.0
             
             percentage = (total_spent / budget.monthly_limit * 100) if budget.monthly_limit > 0 else 0
             

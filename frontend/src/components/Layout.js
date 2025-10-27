@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -19,26 +19,34 @@ import InsightsIcon from '@mui/icons-material/Insights';
 import LoginIcon from '@mui/icons-material/Login';
 import HomeIcon from '@mui/icons-material/Home';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from '../context/AuthContext';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 const drawerWidth = 240;
 
-const navItems = [
+const baseItems = [
   { text: 'Home', icon: <HomeIcon />, to: '/' },
-  { text: 'Dashboard', icon: <DashboardIcon />, to: '/dashboard' },
-  { text: 'Add Expense', icon: <AddCircleOutlineIcon />, to: '/add-expense' },
-  { text: 'History', icon: <HistoryIcon />, to: '/expense-history' },
-  { text: 'Insights', icon: <InsightsIcon />, to: '/insights' },
-  { text: 'Profile', icon: <AccountCircleIcon />, to: '/profile' },
-  { text: 'Login', icon: <LoginIcon />, to: '/login' },
+  { text: 'Dashboard', icon: <DashboardIcon />, to: '/dashboard', auth: true },
+  { text: 'Add Expense', icon: <AddCircleOutlineIcon />, to: '/add-expense', auth: true },
+  { text: 'History', icon: <HistoryIcon />, to: '/expense-history', auth: true },
+  { text: 'Insights', icon: <InsightsIcon />, to: '/insights', auth: true },
+  { text: 'Budget', icon: <AccountBalanceWalletIcon />, to: '/budget', auth: true },
+  { text: 'Profile', icon: <AccountCircleIcon />, to: '/profile', auth: true },
 ];
 
 const Layout = ({ children, title = 'Smart Expense Tracker' }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { token, logout } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  // Build navigation items based on auth status
+  const navItems = baseItems.filter(item => (item.auth ? !!token : true));
 
   const drawer = (
     <div>
@@ -52,6 +60,20 @@ const Layout = ({ children, title = 'Smart Expense Tracker' }) => {
             </ListItemButton>
           </ListItem>
         ))}
+        {/* Auth action */}
+        <ListItem disablePadding>
+          {token ? (
+            <ListItemButton onClick={() => { logout(); navigate('/login'); }}>
+              <ListItemIcon><LogoutIcon /></ListItemIcon>
+              <ListItemText primary="Logout" />
+            </ListItemButton>
+          ) : (
+            <ListItemButton component={Link} to="/login" selected={location.pathname === '/login'}>
+              <ListItemIcon><LoginIcon /></ListItemIcon>
+              <ListItemText primary="Login" />
+            </ListItemButton>
+          )}
+        </ListItem>
       </List>
     </div>
   );

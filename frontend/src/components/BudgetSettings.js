@@ -21,6 +21,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { BudgetAPI } from '../services/api';
 
 const CATEGORIES = [
+  'All',
   'Food',
   'Transport',
   'Entertainment',
@@ -33,7 +34,7 @@ const CATEGORIES = [
 
 const BudgetSettings = () => {
   const [budgets, setBudgets] = useState([]);
-  const [newCategory, setNewCategory] = useState('');
+  const [newCategory, setNewCategory] = useState('All');
   const [newLimit, setNewLimit] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));
   const [message, setMessage] = useState('');

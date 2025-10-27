@@ -5,6 +5,7 @@ import os
 import joblib
 from ocr import extract_text_from_image, extract_text_and_fields
 from models import db, User, Expense, Budget
+from budget_routes import register_budget_routes
 import jwt
 from datetime import datetime, timedelta
 from functools import wraps
@@ -59,6 +60,9 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
     return decorated
 
+# Register budget routes
+register_budget_routes(app, token_required)
+
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
@@ -103,6 +107,22 @@ def login():
         "token": token,
         "user": user.to_dict()
     })
+
+@app.route('/profile', methods=['GET'])
+@token_required
+def get_profile(current_user):
+    return jsonify({"user": current_user.to_dict()})
+
+@app.route('/profile', methods=['PUT'])
+@token_required
+def update_profile(current_user):
+    data = request.json or {}
+    name = data.get('name')
+    # We keep email immutable for simplicity; extend as needed
+    if name:
+        current_user.name = name
+        db.session.commit()
+    return jsonify({"message": "Profile updated", "user": current_user.to_dict()})
 
 @app.route('/upload', methods=['POST'])
 def upload_receipt():

@@ -21,6 +21,8 @@ api.interceptors.request.use((config) => {
 export const AuthAPI = {
   login: (email, password) => api.post('/login', { email, password }),
   register: (name, email, password) => api.post('/register', { name, email, password }),
+  getProfile: () => api.get('/profile'),
+  updateProfile: (payload) => api.put('/profile', payload),
 };
 
 export const ExpenseAPI = {
