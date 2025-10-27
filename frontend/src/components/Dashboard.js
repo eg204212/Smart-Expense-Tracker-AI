@@ -17,7 +17,7 @@ import { Bar, Pie, Line } from 'react-chartjs-2';
 import { Container, Grid, Paper, Typography, Box, Card, CardContent } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CategoryIcon from '@mui/icons-material/Category';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 ChartJS.register(CategoryScale, LinearScale, ArcElement, BarElement, PointElement, LineElement, Tooltip, Legend);
 
@@ -75,119 +75,252 @@ const Dashboard = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
+    <Container maxWidth="xl" sx={{ mt: 2, mb: 2, py: 2 }}>
+      <Box sx={{ mb: 2 }}>
+        <Typography 
+          variant="h4" 
+          gutterBottom 
+          sx={{ 
+            fontWeight: 700, 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            mb: 0.5
+          }}
+        >
+          Dashboard
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Track your expenses and manage your budget effectively
+        </Typography>
+      </Box>
 
       {/* Budget Alerts */}
-      <BudgetAlerts />
+      <Box sx={{ mb: 2 }}>
+        <BudgetAlerts />
+      </Box>
 
       {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
+          <Card 
+            sx={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
+              }
+            }}
+          >
+            <CardContent sx={{ py: 2 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography color="textSecondary" gutterBottom>
+                  <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 500 }}>
                     Total Spent
                   </Typography>
-                  <Typography variant="h4">${totals.sum.toFixed(2)}</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    Rs. {totals.sum.toFixed(2)}
+                  </Typography>
                 </Box>
-                <AttachMoneyIcon color="primary" sx={{ fontSize: 40 }} />
+                <Box 
+                  sx={{ 
+                    backgroundColor: 'rgba(255,255,255,0.2)', 
+                    borderRadius: '50%', 
+                    p: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <AccountBalanceWalletIcon sx={{ fontSize: 32 }} />
+                </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
+          <Card 
+            sx={{ 
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              color: 'white',
+              transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 8px 25px rgba(245, 87, 108, 0.4)',
+              }
+            }}
+          >
+            <CardContent sx={{ py: 2 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography color="textSecondary" gutterBottom>
+                  <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 500 }}>
                     Top Category
                   </Typography>
-                  <Typography variant="h5">{totals.topCat}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    {totals.topCat}
+                  </Typography>
                 </Box>
-                <CategoryIcon color="secondary" sx={{ fontSize: 40 }} />
+                <Box 
+                  sx={{ 
+                    backgroundColor: 'rgba(255,255,255,0.2)', 
+                    borderRadius: '50%', 
+                    p: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <CategoryIcon sx={{ fontSize: 32 }} />
+                </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
+          <Card 
+            sx={{ 
+              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              color: 'white',
+              transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 8px 25px rgba(79, 172, 254, 0.4)',
+              }
+            }}
+          >
+            <CardContent sx={{ py: 2 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography color="textSecondary" gutterBottom>
+                  <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 500 }}>
                     Avg Expense
                   </Typography>
-                  <Typography variant="h5">${totals.avgExpense}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Rs. {totals.avgExpense}
+                  </Typography>
                 </Box>
-                <TrendingUpIcon color="success" sx={{ fontSize: 40 }} />
+                <Box 
+                  sx={{ 
+                    backgroundColor: 'rgba(255,255,255,0.2)', 
+                    borderRadius: '50%', 
+                    p: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <TrendingUpIcon sx={{ fontSize: 32 }} />
+                </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* AI Insights */}
-      <Paper sx={{ p: 2, mb: 3, backgroundColor: '#E8F5F5' }}>
-        <Typography variant="h6" gutterBottom>
-          💡 AI Insights
-        </Typography>
-        {totals.foodSpend > 0 && (
-          <Typography variant="body2" paragraph>
-            🍔 Food spending: ${totals.foodSpend.toFixed(2)}. Consider meal planning to save more!
-          </Typography>
-        )}
-        {totals.transportSpend > 0 && (
-          <Typography variant="body2" paragraph>
-            🚗 Transport costs: ${totals.transportSpend.toFixed(2)}. Explore carpooling options.
-          </Typography>
-        )}
-        {expenses.length > 5 && (
-          <Typography variant="body2" paragraph>
-            📊 You've logged {expenses.length} expenses. Great job tracking!
-          </Typography>
-        )}
-        {expenses.length === 0 && (
-          <Typography variant="body2">
-            📝 No expenses yet. Start by adding your first expense!
-          </Typography>
-        )}
-      </Paper>
-
-      {/* Charts */}
-      <Grid container spacing={3}>
+      {/* Charts - 2 rows layout for better screenshot */}
+      <Grid container spacing={2}>
+        {/* Top Row: Pie and Bar Charts */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Spending by Category
+          <Paper 
+            sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+              transition: 'transform 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
+              }
+            }}
+          >
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: '#424242', mb: 1 }}>
+              📊 Spending by Category
             </Typography>
-            <Box sx={{ height: 300 }}>
+            <Box sx={{ height: 220 }}>
               <Pie data={pieData} options={{ maintainAspectRatio: false }} />
             </Box>
           </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Category Breakdown
+          <Paper 
+            sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+              transition: 'transform 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
+              }
+            }}
+          >
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: '#424242', mb: 1 }}>
+              � Category Breakdown
             </Typography>
-            <Box sx={{ height: 300 }}>
+            <Box sx={{ height: 220 }}>
               <Bar data={barData} options={{ maintainAspectRatio: false }} />
             </Box>
           </Paper>
         </Grid>
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Spending Trend
+
+        {/* Bottom Row: Line Chart and AI Insights */}
+        <Grid item xs={12} md={6}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              borderRadius: 2,
+              boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+              transition: 'transform 0.2s ease-in-out',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
+              }
+            }}
+          >
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: '#424242', mb: 1 }}>
+              � Spending Trend
             </Typography>
-            <Box sx={{ height: 250 }}>
+            <Box sx={{ height: 200 }}>
               <Line data={lineData} options={{ maintainAspectRatio: false }} />
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              background: 'linear-gradient(135deg, #e0f7fa 0%, #e1f5fe 100%)',
+              borderRadius: 2,
+              boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+              border: '1px solid rgba(79, 172, 254, 0.1)',
+              height: '100%'
+            }}
+          >
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: '#00695c' }}>
+              💡 AI Insights
+            </Typography>
+            <Box sx={{ fontSize: '0.875rem' }}>
+              {totals.foodSpend > 0 && (
+                <Typography variant="body2" paragraph sx={{ color: '#004d40', mb: 1 }}>
+                  🍔 Food: Rs. {totals.foodSpend.toFixed(2)}. Consider meal planning!
+                </Typography>
+              )}
+              {totals.transportSpend > 0 && (
+                <Typography variant="body2" paragraph sx={{ color: '#004d40', mb: 1 }}>
+                  � Transport: Rs. {totals.transportSpend.toFixed(2)}. Try carpooling!
+                </Typography>
+              )}
+              {expenses.length > 5 && (
+                <Typography variant="body2" paragraph sx={{ mb: 1 }}>
+                  📊 {expenses.length} expenses logged. Great tracking!
+                </Typography>
+              )}
+              {expenses.length === 0 && (
+                <Typography variant="body2">
+                  📝 No expenses yet. Add your first expense!
+                </Typography>
+              )}
             </Box>
           </Paper>
         </Grid>

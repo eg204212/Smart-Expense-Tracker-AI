@@ -161,13 +161,48 @@ def categorize_expense():
     text = data.get('description') or data.get('text', '')
     if not text:
         return jsonify({"error": "No text provided"}), 400
+    
+    # Check if receipt_type is provided from OCR
+    receipt_type = data.get('receipt_type', '').lower()
+    vendor = data.get('vendor', '')
+    
+    # Smart categorization: Use receipt_type to create better description
+    categorization_text = text
+    if receipt_type:
+        # Map receipt types to category hints
+        receipt_to_category_hints = {
+            'grocery': 'Supermarket groceries food shopping',
+            'restaurant': 'Restaurant dining food meal',
+            'fuel': 'Petrol fuel gas station transport',
+            'utilities': 'Electricity water gas utility bill payment',
+            'pharmacy': 'Pharmacy medicine medical healthcare',
+            'transportation': 'Taxi uber ride transport fare',
+            'online': 'Online purchase shopping order',
+        }
+        
+        # Use the hint if available, otherwise combine vendor + receipt_type
+        if receipt_type in receipt_to_category_hints:
+            categorization_text = receipt_to_category_hints[receipt_type]
+        elif vendor:
+            categorization_text = f"{vendor} {receipt_type}"
+    
+    # Limit text length to avoid confusion (use first 100 chars or smart text)
+    if len(categorization_text) > 200:
+        # If it's very long (full receipt text), try to extract vendor/key info
+        lines = categorization_text.split('\n')
+        # Use first few meaningful lines
+        categorization_text = ' '.join(lines[:3])[:100]
 
-    vectorized_desc = vectorizer.transform([text])
+    vectorized_desc = vectorizer.transform([categorization_text])
     category = model.predict(vectorized_desc)[0]
     proba = model.predict_proba(vectorized_desc)[0]
     confidence = max(proba)
 
-    return jsonify({"category": category, "confidence": float(confidence)})
+    return jsonify({
+        "category": category, 
+        "confidence": float(confidence),
+        "categorization_text": categorization_text  # For debugging
+    })
 
 @app.route('/add', methods=['POST'])
 @token_required

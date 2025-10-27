@@ -35,7 +35,13 @@ export const ExpenseAPI = {
   listExpenses: () => api.get('/list'),
   deleteExpense: (id) => api.delete(`/delete/${id}`),
   updateExpense: (id, payload) => api.put(`/update/${id}`, payload),
-  categorize: (text) => api.post('/categorize', { text }),
+  categorize: (payload) => {
+    // Support both string (legacy) and object (new) formats
+    if (typeof payload === 'string') {
+      return api.post('/categorize', { text: payload });
+    }
+    return api.post('/categorize', payload);
+  },
 };
 
 export const BudgetAPI = {

@@ -48,7 +48,7 @@ const BudgetAlerts = () => {
           sx={{ mb: 1 }}
         >
           <AlertTitle>Budget Exceeded: {alert.budget.category}</AlertTitle>
-          You've spent <strong>${alert.spent.toFixed(2)}</strong> out of ${alert.budget.monthly_limit.toFixed(2)} 
+          You've spent <strong>Rs. {alert.spent.toFixed(2)}</strong> out of Rs. {alert.budget.monthly_limit.toFixed(2)} 
           ({alert.percentage}%)
           <LinearProgress
             variant="determinate"
@@ -67,7 +67,7 @@ const BudgetAlerts = () => {
           sx={{ mb: 1 }}
         >
           <AlertTitle>Approaching Limit: {alert.budget.category}</AlertTitle>
-          You've spent <strong>${alert.spent.toFixed(2)}</strong> out of ${alert.budget.monthly_limit.toFixed(2)} 
+          You've spent <strong>Rs. {alert.spent.toFixed(2)}</strong> out of Rs. {alert.budget.monthly_limit.toFixed(2)} 
           ({alert.percentage}%)
           <LinearProgress
             variant="determinate"

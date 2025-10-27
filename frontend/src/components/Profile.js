@@ -78,7 +78,7 @@ const Profile = () => {
                   <CardContent>
                     <Typography variant="subtitle2" color="text.secondary">{b.month}</Typography>
                     <Typography variant="h6">{b.category}</Typography>
-                    <Typography variant="body1">${b.monthly_limit.toFixed(2)}</Typography>
+                    <Typography variant="body1">Rs. {b.monthly_limit.toFixed(2)}</Typography>
                   </CardContent>
                 </Card>
               </Grid>
