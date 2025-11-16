@@ -21,6 +21,7 @@ data = {
         'Organic food store', 'Vegetable market', 'Fish market', 'Butcher shop',
         'Food hall dining', 'Buffet restaurant', 'Cafe meal',
         
+
         # Transport - 35 samples
         'Uber ride', 'Taxi fare', 'Bus ticket', 'Train ticket', 'Metro card',
         'Petrol station', 'Fuel for car', 'Gas refill', 'Diesel fuel', 'Vehicle fuel',
@@ -30,6 +31,7 @@ data = {
         'Bus pass', 'Monthly transport', 'Ride sharing', 'Three wheeler',
         'Long distance bus', 'Express train', 'Flight booking', 'Travel fare',
         'Tuk tuk ride', 'CTB bus', 'Railway season ticket', 'Highway toll', 'Vehicle service',
+        
         
         # Bills - 40 samples
         'Electricity bill', 'Water bill', 'Internet bill', 'Mobile bill',

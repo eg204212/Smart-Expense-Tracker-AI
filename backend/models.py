@@ -61,6 +61,7 @@ class Expense(db.Model):
             'created_at': self.created_at.isoformat()
         }
 
+
 class Budget(db.Model):
     __tablename__ = 'budgets'
     

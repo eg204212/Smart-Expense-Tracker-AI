@@ -40,6 +40,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def home():
     return jsonify({"message": "Welcome to the Smart Expense Tracker API!"})
 
+
 # Auth decorator
 def token_required(f):
     @wraps(f)
