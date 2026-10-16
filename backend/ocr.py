@@ -1,7 +1,9 @@
 import re
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import easyocr
+import numpy as np
+from PIL import Image, ImageFilter, ImageOps, ImageEnhance
 
 
 def _amount_regexps() -> List[re.Pattern]:
@@ -27,12 +29,15 @@ NEG_TOTAL_HINTS = {
     "total savings",
     "savings total",
     "tax total",
+    "item total",
 }
 
 POS_TOTAL_HINTS = {
     "grand total",
     "net total",
     "total",
+    "gross amount",
+    "amount",
     "amount due",
     "amount payable",
     "balance due",
@@ -114,15 +119,23 @@ def _extract_total_from_lines(lines: List[Dict[str, Any]]) -> Dict[str, Any]:
         return any(h in lt for h in POS_TOTAL_HINTS)
 
     candidates = []
+    all_amounts: Dict[float, int] = {}
     for idx, line in enumerate(lines):
         text = line["text"]
+        for pat in amt_patterns:
+            for match in pat.finditer(text):
+                amount_value = _normalize_amount_str(match.group(1))
+                if 0.05 <= amount_value <= 1000000:
+                    all_amounts[amount_value] = all_amounts.get(amount_value, 0) + 1
         if line_has_pos_total(text):
-            # Extract last amount on the line
+            # Extract the most likely amount on the line. Prefer a currency-tagged amount,
+            # otherwise take the last amount on the total-like line.
             found_amount = None
             for pat in amt_patterns:
                 matches = list(pat.finditer(text))
                 if matches:
                     found_amount = matches[-1].group(1)
+                    break
             if found_amount:
                 val = _normalize_amount_str(found_amount)
                 candidates.append({
@@ -133,10 +146,25 @@ def _extract_total_from_lines(lines: List[Dict[str, Any]]) -> Dict[str, Any]:
                     "amount": val,
                 })
 
-    # Prefer the candidate nearest to the bottom of the receipt
+    # Prefer the amount that repeats most across total-like lines. This helps when a
+    # single OCR pass misreads one digit on only one line, but the same value appears
+    # again on another total/amount line.
     if candidates:
-        candidates.sort(key=lambda c: (c["y"], c["amount"]))
-        best = candidates[-1]
+        votes: Dict[float, List[Dict[str, Any]]] = {}
+        for candidate in candidates:
+            votes.setdefault(candidate["amount"], []).append(candidate)
+
+        best_amount = max(
+            votes.items(),
+            key=lambda item: (
+                all_amounts.get(item[0], 0),
+                len(item[1]),
+                max(candidate["y"] for candidate in item[1]),
+                item[0],
+            ),
+        )[0]
+        best_candidates = votes[best_amount]
+        best = max(best_candidates, key=lambda c: c["y"])
         return {
             "amount": best["amount"],
             "amount_text": best["amount_text"],
@@ -173,31 +201,52 @@ def _extract_total_from_lines(lines: List[Dict[str, Any]]) -> Dict[str, Any]:
 def _detect_receipt_type(text: str, lines: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Detect the type of receipt/bill based on keywords."""
     text_lower = text.lower()
-    
-    # Define keywords for different bill types
+
+    # Score receipt types by signals across the whole receipt.
+    # We deliberately downweight the first line so a vendor name like "Spice Store"
+    # does not override stronger body signals such as "Take Away" or itemized food lines.
     receipt_patterns = {
         "grocery": ["supermarket", "grocery", "mart", "fresh", "organic", "vegetables", "fruits"],
-        "restaurant": ["restaurant", "cafe", "coffee", "dining", "food", "bistro", "diner", "pizza", "burger"],
+        "restaurant": ["restaurant", "cafe", "coffee", "dining", "food", "bistro", "diner", "pizza", "burger", "take away", "takeaway", "take-out", "take out", "meal", "lunch", "dinner", "breakfast", "snack"],
         "fuel": ["gas", "petrol", "fuel", "diesel", "oil", "gallons", "liters", "pump"],
         "utilities": ["electricity", "water", "gas bill", "utility", "kwh", "consumption"],
         "pharmacy": ["pharmacy", "medical", "rx", "prescription", "medicine", "health"],
         "transportation": ["taxi", "uber", "lyft", "transport", "ride", "fare", "metro", "bus"],
-        "shopping": ["store", "shop", "retail", "mall", "purchase", "sale"],
+        "shopping": ["store", "shop", "retail", "mall", "purchase", "sale", "superstore"],
         "online": ["amazon", "ebay", "online", "order", "delivery", "shipping"],
     }
-    
-    detected = []
-    for bill_type, keywords in receipt_patterns.items():
-        if any(kw in text_lower for kw in keywords):
-            detected.append(bill_type)
-    
+
+    scores = {key: 0.0 for key in receipt_patterns}
+    line_texts = [line.get("text", "") for line in lines if line.get("text")]
+
+    for idx, line_text in enumerate(line_texts):
+        line_lower = line_text.lower()
+        weight = 0.6 if idx == 0 else 1.0
+        for bill_type, keywords in receipt_patterns.items():
+            for keyword in keywords:
+                if keyword in line_lower:
+                    scores[bill_type] += weight
+
+    detected = [bill_type for bill_type, score in sorted(scores.items(), key=lambda item: item[1], reverse=True) if score > 0]
+
     if not detected:
         detected.append("general")
-    
+
+    best_type = detected[0]
+    best_score = scores.get(best_type, 0.0)
+    second_score = scores.get(detected[1], 0.0) if len(detected) > 1 else 0.0
+
+    if best_score == 0:
+        confidence = "low"
+    elif best_score >= second_score + 1:
+        confidence = "high"
+    else:
+        confidence = "medium"
+
     return {
-        "type": detected[0] if len(detected) == 1 else "mixed",
+        "type": best_type if best_type != "general" else "general",
         "all_types": detected,
-        "confidence": "high" if len(detected) == 1 else "medium" if detected else "low"
+        "confidence": confidence,
     }
 
 
@@ -227,25 +276,110 @@ def _extract_vendor(text: str, lines: List[Dict[str, Any]]) -> str:
 
 def _extract_date(text: str) -> str:
     """Extract date from receipt."""
+    normalized_text = re.sub(r"\s+", " ", text)
     # Common date patterns
     patterns = [
         r'\b(\d{4}[-/]\d{2}[-/]\d{2})\b',  # YYYY-MM-DD
         r'\b(\d{2}[-/]\d{2}[-/]\d{4})\b',  # DD-MM-YYYY or MM-DD-YYYY
-        r'\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})\b',  # 15 Jan 2025
+        r'\b(\d{1,2}[-/]\d{1,2}[-/]\d{2})\b',  # DD/MM/YY or MM/DD/YY
+        r'\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},\s+\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?)?)\b',  # Nov 18, 2020 4:46:35 PM
+        r'\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?)?)\b',  # 18 Nov 2020 4:46 PM
     ]
     
     for pattern in patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
+        match = re.search(pattern, normalized_text, re.IGNORECASE)
         if match:
-            return match.group(1)
+            raw_date = match.group(1)
+            for date_format in (
+                "%Y-%m-%d",
+                "%d-%m-%Y",
+                "%d/%m/%Y",
+                "%m/%d/%Y",
+                "%d/%m/%y",
+                "%m/%d/%y",
+                "%d %b %Y %I:%M:%S %p",
+                "%d %b %Y %I:%M %p",
+                "%d %b %Y",
+                "%b %d, %Y %I:%M:%S %p",
+                "%b %d, %Y %I:%M %p",
+                "%b %d, %Y",
+            ):
+                try:
+                    return __import__("datetime").datetime.strptime(raw_date, date_format).strftime("%Y-%m-%d")
+                except Exception:
+                    continue
+            return raw_date
     
     return ""
 
 
+def _preprocess_image(image_path: str):
+    """Create a higher-contrast temporary image for OCR."""
+    try:
+        image = Image.open(image_path).convert("L")
+    except Exception:
+        return image_path
+
+    image = ImageOps.autocontrast(image)
+    image = ImageEnhance.Sharpness(image).enhance(1.5)
+    image = image.filter(ImageFilter.MedianFilter(size=3))
+    image = image.filter(ImageFilter.SHARPEN)
+
+    array = np.array(image)
+    threshold = float(array.mean())
+    binary = (array > threshold).astype(np.uint8) * 255
+
+    if binary.mean() > 245:
+        # Very bright receipts can lose detail after thresholding, so keep the grayscale image.
+        return np.array(image)
+
+    return binary
+
+
+def _run_easyocr(image_path: str):
+    """Run OCR on the original image and a lightly preprocessed variant."""
+    reader = easyocr.Reader(['en'], gpu=False)
+
+    original = reader.readtext(image_path, detail=1, paragraph=False)
+    processed_image = _preprocess_image(image_path)
+
+    if isinstance(processed_image, str):
+        processed = []
+    else:
+        processed = reader.readtext(processed_image, detail=1, paragraph=False)
+
+    if not processed:
+        return original
+
+    # Keep both passes and deduplicate by text while preserving confidence.
+    merged: List[Tuple[List[Tuple[int, int]], str, float]] = []
+    seen = set()
+    for bbox, text, conf in original + processed:
+        normalized = re.sub(r'\s+', ' ', text).strip().lower()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        merged.append((bbox, text, conf))
+
+    return merged or original
+
+
 def extract_text_and_fields(image_path: str) -> Dict[str, Any]:
-    """Run EasyOCR and return both raw text and parsed fields (like total, vendor, type)."""
-    reader = easyocr.Reader(['en'])
-    detailed = reader.readtext(image_path, detail=1)  # [(bbox, text, conf), ...]
+    """Run EasyOCR and return both raw text and parsed fields."""
+    detailed = _run_easyocr(image_path)
+
+    if not detailed:
+        return {
+            "text": "",
+            "lines": [],
+            "fields": {
+                "total": {},
+                "receipt_type": {"type": "general", "all_types": ["general"], "confidence": "low"},
+                "vendor": "",
+                "date": "",
+            },
+        }
+
     # Build plain text (joined by newlines to preserve some structure)
     plain_text = "\n".join([t for (_, t, _) in detailed])
     lines = _group_into_lines(detailed)
@@ -262,34 +396,6 @@ def extract_text_and_fields(image_path: str) -> Dict[str, Any]:
             "receipt_type": receipt_type,
             "vendor": vendor,
             "date": date,
-        },
-    }
-
-
-def extract_text_from_image(image_path):
-    """
-    Backward-compatible helper that returns only the flattened text.
-    """
-    try:
-        data = extract_text_and_fields(image_path)
-        return data.get("text", "")
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-
-def extract_text_and_fields(image_path: str) -> Dict[str, Any]:
-    """Run EasyOCR and return both raw text and parsed fields (like total)."""
-    reader = easyocr.Reader(['en'])
-    detailed = reader.readtext(image_path, detail=1)  # [(bbox, text, conf), ...]
-    # Build plain text (joined by newlines to preserve some structure)
-    plain_text = "\n".join([t for (_, t, _) in detailed])
-    lines = _group_into_lines(detailed)
-    total = _extract_total_from_lines(lines)
-    return {
-        "text": plain_text,
-        "lines": lines,
-        "fields": {
-            "total": total,
         },
     }
 

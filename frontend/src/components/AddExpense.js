@@ -41,13 +41,39 @@ const AddExpense = () => {
     if (f) setPreview(URL.createObjectURL(f));
   };
 
+  const normalizeDateForInput = (value) => {
+    if (!value) return '';
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+
+    const ymd = value.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+    if (ymd) return `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
+
+    const dmy = value.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+    if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+
+    const dmy2 = value.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2})$/);
+    if (dmy2) {
+      const year = Number(dmy2[3]);
+      const fullYear = year >= 70 ? 1900 + year : 2000 + year;
+      const day = dmy2[1].padStart(2, '0');
+      const month = dmy2[2].padStart(2, '0');
+      return `${fullYear}-${month}-${day}`;
+    }
+
+    return value;
+  };
+
   const extractFromText = async (text, fields) => {
     // naive extraction helpers
     const lines = text.split(/\n|\r/).map((l) => l.trim()).filter(Boolean);
     
     // Use backend-extracted fields first
     if (!vendor && fields?.vendor) setVendor(fields.vendor);
-    if (!date && fields?.date) setDate(fields.date);
+    if (!date && fields?.date) setDate(normalizeDateForInput(fields.date));
     
     // Store receipt_type for smarter categorization
     let detectedReceiptType = '';
@@ -84,8 +110,19 @@ const AddExpense = () => {
       }
       if (!amount && candidateAmount) setAmount(candidateAmount.replace(/,/g, ''));
     }
-    const dateMatch = text.match(/(\d{4}[-/]\d{2}[-/]\d{2}|\d{2}[-/]\d{2}[-/]\d{4})/);
-    if (!date && dateMatch) setDate(dateMatch[1]);
+    const datePatterns = [
+      /(\d{4}[-/]\d{2}[-/]\d{2}|\d{2}[-/]\d{2}[-/]\d{4})/,
+      /(\d{1,2}[-/]\d{1,2}[-/]\d{2})/,
+      /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},\s+\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?)?)/i,
+      /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}(?:\s+\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?)?)/i,
+    ];
+    for (const pattern of datePatterns) {
+      const dateMatch = text.match(pattern);
+      if (dateMatch && !date) {
+        setDate(normalizeDateForInput(dateMatch[1]));
+        break;
+      }
+    }
     
     // Smart categorization: Pass receipt_type and vendor for better accuracy
     try {
